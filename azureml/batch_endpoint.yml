@@ -1,0 +1,6 @@
+# Batch endpoint serving the registered model for on-demand scoring windows.
+# az ml batch-endpoint create -f azureml/batch_endpoint.yml
+$schema: https://azuremlschemas.azureedge.net/latest/batchEndpoint.schema.json
+name: outbreak-signal-batch
+description: Scores facility x condition x day feature rows for outbreak signals.
+auth_mode: aad_token

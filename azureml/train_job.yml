@@ -1,0 +1,29 @@
+# Azure ML v2 command job: weekly retraining, tracked in the workspace's MLflow.
+# Submit:  az ml job create -f azureml/train_job.yml
+#
+# Training is an Azure ML job (not a Databricks task) on purpose: the model
+# registry, experiment UI, and endpoint deployment all live in Azure ML, so the
+# artifact is born where it will be governed. The data pipeline stays on
+# Databricks; the seam between the two is the feature table in the lake.
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+experiment_name: vitalsignal-outbreak-signal
+display_name: weekly-retrain
+compute: azureml:cpu-cluster
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+  conda_file: environment.yml
+code: ../src
+command: >-
+  python -m vitalsignal.ml.train --test-days 75
+environment_variables:
+  PYTHONPATH: .
+  VS_BACKEND: azure
+  VS_STORAGE_ACCOUNT: ${{inputs.storage_account}}
+  # azureml:// URI makes mlflow log to this workspace with zero code changes --
+  # train.py already branches on the URI scheme.
+  VS_MLFLOW_TRACKING_URI: azureml://
+inputs:
+  storage_account:
+    type: string
+    default: stvitalsignal

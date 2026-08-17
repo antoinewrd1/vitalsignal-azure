@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: silver
+    description: >
+      Parquet written by the PySpark silver job. dbt does not own this data;
+      it reads it in place. On Databricks this becomes a Unity Catalog table
+      reference instead of read_parquet().
+    meta:
+      external_location: >
+        read_parquet('{{ env_var("VS_LOCAL_ROOT", "../../_lake") }}/silver/{name}/**/*.parquet',
+                     hive_partitioning = true, union_by_name = true)
+    tables:
+      - name: ecr_cases
+        description: One row per de-duplicated, DQ-passing eCR message.
+        columns:
+          - name: message_control_id
+            data_tests: [not_null]
+          - name: report_date
+            data_tests: [not_null]

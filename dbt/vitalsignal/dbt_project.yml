@@ -1,0 +1,28 @@
+name: vitalsignal
+version: "1.0.0"
+config-version: 2
+profile: vitalsignal
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # The surveillance calendar. Every facility x condition x day in this range
+  # gets a row in fct_case_daily, including days with zero cases -- a missing
+  # row and a zero are very different things to an outbreak detector.
+  spine_start: "2025-11-03"
+  spine_end: "2026-06-30"
+  # Days of history required before a z-score is considered trustworthy.
+  baseline_min_days: 21
+
+models:
+  vitalsignal:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts

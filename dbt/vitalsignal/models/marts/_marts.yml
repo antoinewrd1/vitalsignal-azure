@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: dim_facility
+    description: One row per reporting facility, with reporting-health columns.
+    columns:
+      - name: facility_sk
+        data_tests: [unique, not_null]
+      - name: facility_id
+        data_tests: [unique, not_null]
+      - name: reporting_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["active", "stale"]
+
+  - name: dim_condition
+    description: One row per reportable condition code.
+    columns:
+      - name: condition_sk
+        data_tests: [unique, not_null]
+      - name: condition_code
+        data_tests: [unique, not_null]
+      - name: condition_group
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["enteric", "respiratory", "other"]
+
+  - name: fct_case_daily
+    description: >
+      Zero-filled daily case counts at facility x condition grain, with a
+      leakage-safe 28-day baseline and aberration z-score. This is the table
+      the ML feature builder reads.
+    columns:
+      - name: case_daily_sk
+        description: Surrogate key over the declared grain; uniqueness here IS the grain test.
+        data_tests: [unique, not_null]
+      - name: report_date
+        data_tests: [not_null]
+      - name: facility_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_facility')
+                field: facility_id
+      - name: condition_code
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_condition')
+                field: condition_code
+      - name: case_count
+        description: Never NULL -- absent days are zeros, by construction.
+        data_tests:
+          - not_null
+          - dbt_utils_accepted_range:
+              arguments:
+                min_value: 0
+
+  - name: agg_condition_daily_state
+    description: Statewide daily rollup for BI.
+    columns:
+      - name: report_date
+        data_tests: [not_null]

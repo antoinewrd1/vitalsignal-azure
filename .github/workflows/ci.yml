@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: src
+      VS_BACKEND: local
+      VS_LLM_BACKEND: fake          # CI never spends tokens or needs secrets
+      VS_MLFLOW_TRACKING_URI: ./_mlruns
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-java@v4   # PySpark needs a JVM on the runner
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Unit tests
+        run: python -m pytest -q
+
+      # The real assertion: the entire medallion + ML + AI pipeline runs from
+      # zero on a fresh runner. A repo whose README promises a pipeline should
+      # have CI that actually executes it.
+      - name: End-to-end pipeline (small)
+        run: |
+          python -m vitalsignal.generate.synthetic_ecr --days 120 --facilities 6
+          python -m vitalsignal.ingest.land_to_bronze
+          python -m vitalsignal.transform.bronze_to_silver
+          mkdir -p _lake/gold
+          cd dbt/vitalsignal && dbt build --target dev \
+            --vars '{spine_start: "2026-03-03", spine_end: "2026-06-30"}' && cd ../..
+          python -m vitalsignal.ml.features
+          python -m vitalsignal.ml.train --test-days 40
+          python -m vitalsignal.ml.score_batch
+          python -m vitalsignal.ai.rag --build-index
+          python -m vitalsignal.ai.evals        # exits 1 on any gate breach
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: _out/

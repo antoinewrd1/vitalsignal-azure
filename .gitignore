@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+_lake/
+_mlruns/
+_out/
+dbt/vitalsignal/target/
+dbt/vitalsignal/dbt_packages/
+dbt/vitalsignal/logs/
+.pytest_cache/
+.venv/
+.user.yml

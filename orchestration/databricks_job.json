@@ -1,0 +1,79 @@
+{
+  "_comment": "Databricks Jobs 2.1 spec for the nightly data pipeline. Deploy with: databricks jobs create --json @orchestration/databricks_job.json. Task graph mirrors the local Makefile exactly -- same modules, same order -- because the code is backend-agnostic via vitalsignal.config.",
+  "name": "vitalsignal-nightly",
+  "schedule": {
+    "quartz_cron_expression": "0 30 5 * * ?",
+    "timezone_id": "America/New_York",
+    "pause_status": "UNPAUSED"
+  },
+  "email_notifications": { "on_failure": ["oncall@example.org"] },
+  "max_concurrent_runs": 1,
+  "job_clusters": [
+    {
+      "job_cluster_key": "etl",
+      "new_cluster": {
+        "spark_version": "15.4.x-scala2.12",
+        "node_type_id": "Standard_D4ds_v5",
+        "num_workers": 2,
+        "azure_attributes": { "availability": "SPOT_WITH_FALLBACK_AZURE" },
+        "spark_env_vars": {
+          "VS_BACKEND": "azure",
+          "VS_TABLE_FORMAT": "delta",
+          "VS_STORAGE_ACCOUNT": "{{var.storage_account}}",
+          "VS_CONTAINER": "lakehouse"
+        }
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "bronze",
+      "job_cluster_key": "etl",
+      "spark_python_task": {
+        "python_file": "src/vitalsignal/ingest/land_to_bronze.py",
+        "source": "GIT"
+      }
+    },
+    {
+      "task_key": "silver",
+      "depends_on": [{ "task_key": "bronze" }],
+      "job_cluster_key": "etl",
+      "spark_python_task": {
+        "python_file": "src/vitalsignal/transform/bronze_to_silver.py",
+        "source": "GIT"
+      }
+    },
+    {
+      "task_key": "gold_dbt",
+      "depends_on": [{ "task_key": "silver" }],
+      "dbt_task": {
+        "project_directory": "dbt/vitalsignal",
+        "commands": ["dbt build --target prod"],
+        "warehouse_id": "{{var.sql_warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "features",
+      "depends_on": [{ "task_key": "gold_dbt" }],
+      "job_cluster_key": "etl",
+      "spark_python_task": {
+        "python_file": "src/vitalsignal/ml/features.py",
+        "source": "GIT"
+      }
+    },
+    {
+      "task_key": "score",
+      "depends_on": [{ "task_key": "features" }],
+      "job_cluster_key": "etl",
+      "spark_python_task": {
+        "python_file": "src/vitalsignal/ml/score_batch.py",
+        "source": "GIT"
+      }
+    }
+  ],
+  "git_source": {
+    "git_url": "https://github.com/REPLACE_ME/vitalsignal-azure",
+    "git_provider": "gitHub",
+    "git_branch": "main"
+  }
+}

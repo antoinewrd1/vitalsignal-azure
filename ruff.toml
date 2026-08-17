@@ -1,0 +1,18 @@
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "SIM", "RUF", "PIE", "ISC", "DTZ", "BLE"]
+ignore = [
+    # Synthetic-data timestamps are intentionally naive local times -- HL7 MSH-7
+    # in the wild carries no offset, and the generator mimics that.
+    "DTZ001",
+]
+
+[lint.per-file-ignores]
+# First-run probe of the bronze control table: any read failure means "table
+# does not exist yet" regardless of storage backend, so broad is correct here.
+"src/vitalsignal/ingest/land_to_bronze.py" = ["BLE001"]
+# SIM905's list-literal autofix for the stopword set produces a 250-char line
+# that then violates E501; the split-string form is the readable one.
+"src/vitalsignal/ai/rag.py" = ["SIM905"]

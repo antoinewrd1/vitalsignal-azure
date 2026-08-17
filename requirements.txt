@@ -1,0 +1,29 @@
+# --- Core data engineering -------------------------------------------------
+pyspark==4.0.1
+delta-spark==4.0.0 ; platform_system != "Emscripten"   # used on Databricks / Azure only
+
+# --- Analytics engineering -------------------------------------------------
+dbt-core==1.12.2
+dbt-duckdb==1.10.0        # local development target
+dbt-databricks==1.10.0    # Azure Databricks SQL Warehouse target
+duckdb==1.5.5
+
+# --- ML engineering --------------------------------------------------------
+scikit-learn==1.8.0
+pandas==3.0.2
+numpy>=2.0
+mlflow-skinny==3.15.1
+azureml-mlflow ; python_version >= "3.9"   # Azure ML tracking backend
+
+# --- AI engineering --------------------------------------------------------
+openai>=1.40                  # Azure OpenAI via AzureOpenAI client
+azure-identity>=1.17
+azure-search-documents>=11.5
+pydantic>=2.7
+
+# --- Tooling ---------------------------------------------------------------
+pytest>=8.0
+ruff>=0.6
+
+pyarrow>=17.0
+skops>=0.10
