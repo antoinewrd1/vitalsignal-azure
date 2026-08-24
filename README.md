@@ -10,7 +10,7 @@ zero cloud dependencies**, which is what CI does on every push.
 
 The domain is deliberate: it extends real production experience running a
 statewide eCR pipeline (HL7/FHIR, 360K+ clinical records/year) at a state
-health department — the synthetic feed here mimics that shape.
+health department: the synthetic feed here mimics that shape.
 
 ```
 landing (NDJSON, HL7v2-style)                                 [generate/]
