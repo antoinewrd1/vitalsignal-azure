@@ -1,4 +1,4 @@
-# VitalSignal — public health surveillance lakehouse on Azure
+# VitalSignal: public health surveillance lakehouse on Azure
 
 An end-to-end **data engineering + analytics engineering + ML engineering + AI
 engineering** project: synthetic electronic case reports (eCR) flow through a
